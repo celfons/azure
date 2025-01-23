@@ -40,6 +40,11 @@ let db;
 // Middleware para JSON
 app.use(express.json());
 
+// Rota principal
+app.get('/', (req, res) => {
+  res.send('Hello, World! Bem-vindo à aplicação CRUD integrada ao MongoDB Atlas e Azure Key Vault.');
+});
+
 // Rotas CRUD
 app.post('/users', async (req, res) => {
   const user = req.body;
@@ -75,4 +80,35 @@ app.get('/users/:id', async (req, res) => {
 
 app.put('/users/:id', async (req, res) => {
   const id = req.params.id;
-  const updates = req
+  const updates = req.body;
+  try {
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updates }
+    );
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+    res.status(200).send({ message: 'User updated' });
+  } catch (err) {
+    res.status(500).send({ error: 'Failed to update user', details: err.message });
+  }
+});
+
+app.delete('/users/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await db.collection('users').deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+    res.status(200).send({ message: 'User deleted' });
+  } catch (err) {
+    res.status(500).send({ error: 'Failed to delete user', details: err.message });
+  }
+});
+
+// Inicializa o servidor
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
