@@ -1,11 +1,78 @@
 const express = require('express');
+const { MongoClient, ObjectId } = require('mongodb');
+const { DefaultAzureCredential } = require('@azure/identity');
+const { SecretClient } = require('@azure/keyvault-secrets');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-  res.send('Hello World from Node.js on Azure!');
+// Configuração do Azure Key Vault
+const keyVaultUrl = 'https://celfons.vault.azure.net'; // URL do Key Vault
+const secretName = 'MongoDBConnectionString'; // Nome do segredo com a string de conexão
+
+// Configuração do MongoDB
+let db;
+
+// Função para configurar a conexão com o MongoDB Atlas
+(async () => {
+  try {
+    console.log('Connecting to Azure Key Vault...');
+    const credential = new DefaultAzureCredential();
+    const secretClient = new SecretClient(keyVaultUrl, credential);
+
+    // Obtém o segredo do Key Vault
+    const secret = await secretClient.getSecret(secretName);
+    const mongoUrl = secret.value;
+
+    console.log('Connecting to MongoDB Atlas...');
+    const mongoClient = new MongoClient(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+    await mongoClient.connect();
+    console.log('Connected to MongoDB Atlas');
+
+    // Configura o banco de dados (substitua "testdb" pelo nome do seu database)
+    db = mongoClient.db('testdb');
+  } catch (error) {
+    console.error('Error setting up MongoDB connection:', error.message);
+    process.exit(1);
+  }
+})();
+
+// Middleware para JSON
+app.use(express.json());
+
+// Rotas CRUD
+app.post('/users', async (req, res) => {
+  const user = req.body;
+  try {
+    const result = await db.collection('users').insertOne(user);
+    res.status(201).send({ message: 'User created', id: result.insertedId });
+  } catch (err) {
+    res.status(500).send({ error: 'Failed to create user', details: err.message });
+  }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+app.get('/users', async (req, res) => {
+  try {
+    const users = await db.collection('users').find().toArray();
+    res.status(200).send(users);
+  } catch (err) {
+    res.status(500).send({ error: 'Failed to fetch users', details: err.message });
+  }
 });
+
+app.get('/users/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    const user = await db.collection('users').findOne({ _id: new ObjectId(id) });
+    if (!user) {
+      return res.status(404).send({ error: 'User not found' });
+    }
+    res.status(200).send(user);
+  } catch (err) {
+    res.status(500).send({ error: 'Failed to fetch user', details: err.message });
+  }
+});
+
+app.put('/users/:id', async (req, res) => {
+  const id = req.params.id;
+  const updates = req
