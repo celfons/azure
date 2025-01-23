@@ -1,15 +1,24 @@
 {
-  "name": "hello-world-node",
+  "name": "mongodb-keyvault-app",
   "version": "1.0.0",
-  "description": "A simple Hello World app for Azure deployment",
+  "description": "CRUD Node.js integrado ao MongoDB Atlas e Azure Key Vault",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
+  "author": "Marcel",
+  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "@azure/identity": "^3.1.1",
+    "@azure/keyvault-secrets": "^4.6.0",
+    "express": "^4.18.2",
+    "mongodb": "^5.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   }
 }
