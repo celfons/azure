@@ -4,7 +4,7 @@ const { DefaultAzureCredential } = require('@azure/identity');
 const { SecretClient } = require('@azure/keyvault-secrets');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 // Configuração do Azure Key Vault
 const keyVaultUrl = 'https://celfons.vault.azure.net'; // URL do Key Vault
