@@ -62,7 +62,7 @@ app.get('/', async (req, res) => {
     res.send(`Hello, World! Este endpoint foi visitado ${currentCount} vezes.`);
   } catch (error) {
     console.error('Error updating visit count:', error.message);
-    res.status(500).send({ error: 'Failed to update visit count' });
+    res.status(500).send(error.message);
   }
 });
 
