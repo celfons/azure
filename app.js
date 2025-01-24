@@ -31,6 +31,13 @@ let db;
 
     // Configura o banco de dados (substitua "testdb" pelo nome do seu database)
     db = mongoClient.db('testdb');
+
+    // Inicializa o contador de visitas se não existir
+    const existingCounter = await db.collection('visits').findOne({ name: 'rootCounter' });
+    if (!existingCounter) {
+      await db.collection('visits').insertOne({ name: 'rootCounter', count: 0 });
+      console.log('Counter initialized');
+    }
   } catch (error) {
     console.error('Error setting up MongoDB connection:', error.message);
     process.exit(1);
@@ -40,9 +47,23 @@ let db;
 // Middleware para JSON
 app.use(express.json());
 
-// Rota principal
-app.get('/', (req, res) => {
-  res.send('Hello, World! Bem-vindo à aplicação CRUD integrada ao MongoDB Atlas e Azure Key Vault.');
+// Rota principal com contador de visitas
+app.get('/', async (req, res) => {
+  try {
+    // Incrementa o contador
+    const result = await db.collection('visits').findOneAndUpdate(
+      { name: 'rootCounter' },
+      { $inc: { count: 1 } }, // Incrementa o campo "count" em 1
+      { returnDocument: 'after' } // Retorna o documento atualizado
+    );
+
+    const currentCount = result.value?.count || 0;
+
+    res.send(`Hello, World! Este endpoint foi visitado ${currentCount} vezes.`);
+  } catch (error) {
+    console.error('Error updating visit count:', error.message);
+    res.status(500).send({ error: 'Failed to update visit count' });
+  }
 });
 
 // Rotas CRUD
