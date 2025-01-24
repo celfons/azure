@@ -38,6 +38,11 @@ let db;
       await db.collection('visits').insertOne({ name: 'rootCounter', count: 0 });
       console.log('Counter initialized');
     }
+
+    // Inicializa o servidor após a conexão com o MongoDB
+    app.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
+    });
   } catch (error) {
     console.error('Error setting up MongoDB connection:', error.message);
     process.exit(1);
@@ -127,9 +132,4 @@ app.delete('/users/:id', async (req, res) => {
   } catch (err) {
     res.status(500).send({ error: 'Failed to delete user', details: err.message });
   }
-});
-
-// Inicializa o servidor
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
 });
