@@ -48,10 +48,7 @@ app.get('/', async (req, res) => {
 // Conectar ao MongoDB
 async function connectToDatabase() {
   try {
-    const connectionString = await getSecret(
-      "MongoDBConnectionString", 
-      "https://celfons.vault.azure.net/"
-    );
+    const connectionString = "mongodb+srv://test:E1wUVYFLtGwqyWhh@cluster0.cvi3n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
     console.log('Connecting to MongoDB...');
     await mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log('Connected to MongoDB');
