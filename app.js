@@ -7,7 +7,7 @@ const { DefaultAzureCredential } = require('@azure/identity');
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
 // Modelo para armazenar visitas no MongoDB
 const visitSchema = new mongoose.Schema({
