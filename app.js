@@ -7,7 +7,7 @@ const { DefaultAzureCredential } = require('@azure/identity');
 dotenv.config();
 
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
 // Modelo para armazenar visitas no MongoDB
 const visitSchema = new mongoose.Schema({
@@ -17,11 +17,18 @@ const Visit = mongoose.model('Visit', visitSchema);
 
 // Função para buscar a connection string no Azure Key Vault
 async function getSecret(secretName, keyVaultUrl) {
-  const credential = new DefaultAzureCredential();
-  const client = new SecretClient(keyVaultUrl, credential);
+  try {
+    const credential = new DefaultAzureCredential();
+    const client = new SecretClient(keyVaultUrl, credential);
 
-  const secret = await client.getSecret(secretName);
-  return secret.value || '';
+    console.log(`Fetching secret: ${secretName}`);
+    const secret = await client.getSecret(secretName);
+    console.log('Secret retrieved successfully');
+    return secret.value || '';
+  } catch (error) {
+    console.error(`Error retrieving secret "${secretName}":`, error);
+    throw error;
+  }
 }
 
 // Rota principal que incrementa e retorna o contador de visitas
@@ -35,14 +42,18 @@ app.get('/', async (req, res) => {
     res.status(200).json({ message: 'Welcome!', visitCount: visit?.count });
   } catch (error) {
     console.error('Error incrementing visit count:', error);
-    res.status(500).json({ message: 'Error incrementing visit count', error: error });
+    res.status(500).json({ message: 'Error incrementing visit count', error: error.message });
   }
 });
 
 // Conectar ao MongoDB
 async function connectToDatabase() {
   try {
-    const connectionString = await getSecret("MongoDBConnectionString",  "https://celfons.vault.azure.net/");
+    const connectionString = await getSecret(
+      "MongoDBConnectionString", 
+      "https://celfons.vault.azure.net/"
+    );
+    console.log('Connecting to MongoDB...');
     await mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log('Connected to MongoDB');
   } catch (error) {
@@ -53,6 +64,10 @@ async function connectToDatabase() {
 
 // Iniciar o servidor
 app.listen(PORT, async () => {
-  await connectToDatabase();
-  console.log(`Server is running on http://localhost:${PORT}`);
+  try {
+    await connectToDatabase();
+    console.log(`Server is running on http://localhost:${PORT}`);
+  } catch (error) {
+    console.error('Error starting the server:', error);
+  }
 });
