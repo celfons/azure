@@ -23,10 +23,12 @@ async function getSecret(secretName, keyVaultUrl) {
 
     console.log(`Fetching secret: ${secretName}`);
     const secret = await client.getSecret(secretName);
+    if (!secret.value) throw new Error(`Secret "${secretName}" is empty`);
     console.log('Secret retrieved successfully');
-    return secret.value || '';
+    return secret.value;
   } catch (error) {
     console.error(`Error retrieving secret "${secretName}":`, error);
+    throw error; // Lança o erro para tratamento
   }
 }
 
@@ -38,7 +40,8 @@ app.get('/', async (req, res) => {
       { $inc: { count: 1 } }, 
       { upsert: true, new: true }
     );
-    res.status(200).json({ message: 'Welcome!', visitCount: visit?.count });
+    console.log(`Visit count incremented to: ${visit.count}`);
+    res.status(200).json({ message: 'Welcome!', visitCount: visit.count });
   } catch (error) {
     console.error('Error incrementing visit count:', error);
     res.status(500).json({ message: 'Error incrementing visit count', error: error.message });
@@ -48,14 +51,26 @@ app.get('/', async (req, res) => {
 // Conectar ao MongoDB
 async function connectToDatabase() {
   try {
-    const connectionString = "mongodb+srv://test:E1wUVYFLtGwqyWhh@cluster0.cvi3n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    const connectionString = await getSecret(
+      'MongoDBConnectionString', 
+      'https://celfons.vault.azure.net/'
+    );
     console.log('Connecting to MongoDB...');
     await mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log('Connected to MongoDB');
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
+    throw error;
   }
 }
+
+// Listener para encerrar a conexão ao MongoDB
+process.on('SIGINT', async () => {
+  console.log('Closing MongoDB connection...');
+  await mongoose.connection.close();
+  console.log('MongoDB connection closed');
+  process.exit(0);
+});
 
 // Iniciar o servidor
 app.listen(PORT, async () => {
